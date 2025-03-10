@@ -31,8 +31,15 @@ const hardHatConfig: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      chainId: 1337,
-      initialBaseFeePerGas: 0, // Workaround from https://github.com/sc-forks/solidity-coverage/issues/652#issuecomment-896330136 . Remove when that issue is closed.
+      chainId: 31337,  // 改為 hardhat 默認的 chainId
+      mining: {
+        auto: true,
+        interval: 1000
+      }
+    },
+    localhost: {
+      url: "http://127.0.0.1:8545",
+      chainId: 31337,
     },
     ropsten: {
       url: process.env.ROPSTEN_PROVIDER_URL ?? "",
