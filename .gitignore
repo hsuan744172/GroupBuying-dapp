@@ -7,11 +7,18 @@ dist-ssr
 node_modules
 .env
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
 
 coverage
+coverage.json
+typechain
+typechain-types
+
+# Local deployment files
+src/artifacts/deployments.json
+
 .eslintcache
 .openzeppelin/*.json
 
