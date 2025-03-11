@@ -64,6 +64,11 @@ const hardHatConfig: HardhatUserConfig = {
         "https://speedy-nodes-nyc.moralis.io/036063875a28828fa0c00596/bsc/testnet",
       accounts: [process.env.PRIVATE_KEY ?? ""].filter(Boolean),
     },
+    volta: {
+      url: process.env.VOLTA_RPC_URL || "https://volta-rpc.energyweb.org",
+      chainId: 73799,
+      accounts: [process.env.PRIVATE_KEY ?? ""].filter(Boolean),
+    },
   },
   gasReporter: {
     // Usage: REPORT_GAS=true pnpm run test
