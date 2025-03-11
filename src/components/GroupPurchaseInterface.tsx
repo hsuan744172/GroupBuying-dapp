@@ -7,14 +7,11 @@ import { Toaster, toast } from 'react-hot-toast';
 
 export default function GroupPurchaseInterface() {
   const [contract, setContract] = useState<Contract | null>(null);
-  const [account, setAccount] = useState('');
   const [goalAmount, setGoalAmount] = useState('');
   const [itemPrice, setItemPrice] = useState('');
   const [deadline, setDeadline] = useState('');
   const [totalFunds, setTotalFunds] = useState('');
   const [participants, setParticipants] = useState(0);
-  const [accounts, setAccounts] = useState<string[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState('');
   const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
   const [owner, setOwner] = useState('');
   const [supplier, setSupplier] = useState('');
@@ -22,35 +19,22 @@ export default function GroupPurchaseInterface() {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [balance, setBalance] = useState<string>('0');
 
-  const { account: metaMaskAccount, library: metaMaskProvider } = useWeb3React();
-  const [useMetaMask, setUseMetaMask] = useState(false);
-  const [localAccounts, setLocalAccounts] = useState<string[]>([]);
+  const { account, library: provider, active } = useWeb3React();
 
   useEffect(() => {
     const init = async () => {
+      if (!active || !provider || !account) return;
+      
       setIsLoading(true);
       try {
-        const localProvider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545");
-        
-        // 獲取所有本地測試帳戶
-        const accounts = await localProvider.listAccounts();
-        setLocalAccounts(accounts);
-        setSelectedAccount(accounts[0]);
-        
-        // 獲取網絡ID
-        const network = await localProvider.getNetwork();
+        const network = await provider.getNetwork();
         const contractAddress = deployments[network.chainId]?.GroupPurchase;
         
         if (!contractAddress) {
           throw new Error("Contract not deployed on this network");
         }
 
-        // 根據使用者選擇決定使用哪個provider和signer
-        const provider = useMetaMask ? metaMaskProvider : localProvider;
-        const signer = useMetaMask 
-          ? metaMaskProvider.getSigner() 
-          : localProvider.getSigner(accounts[0]);
-        
+        const signer = provider.getSigner();
         const contractInstance = new ethers.Contract(
           contractAddress, 
           GroupPurchaseABI.abi, 
@@ -58,15 +42,13 @@ export default function GroupPurchaseInterface() {
         );
         
         setContract(contractInstance);
-        setAccount(useMetaMask ? metaMaskAccount : await signer.getAddress());
 
-        // 獲取 owner 和 supplier 地址
+        // 獲取合約信息
         const ownerAddress = await contractInstance.owner();
         const info = await contractInstance.getContractInfo();
         
         setOwner(ownerAddress);
         setSupplier(info._supplier);
-        
         setGoalAmount(ethers.utils.formatEther(info._goalAmount));
         setItemPrice(ethers.utils.formatEther(info._itemPrice));
         const deadlineTimestamp = info._deadline.toNumber() * 1000;
@@ -75,14 +57,13 @@ export default function GroupPurchaseInterface() {
         setParticipants(info._participantCount.toNumber());
 
         // 獲取餘額
-        const accountToUse = useMetaMask ? metaMaskAccount : await signer.getAddress();
-        const balanceWei = await provider.getBalance(accountToUse);
+        const balanceWei = await provider.getBalance(account);
         setBalance(ethers.utils.formatEther(balanceWei));
 
         // 監聽事件
         contractInstance.on("ContributionReceived", (contributor, amount) => {
           if (contributor === account) {
-            alert(`成功貢獻 ${ethers.utils.formatEther(amount)} ETH!`);
+            toast.success(`成功貢獻 ${ethers.utils.formatEther(amount)} ETH!`);
           }
           updateContractInfo(contractInstance);
         });
@@ -94,13 +75,12 @@ export default function GroupPurchaseInterface() {
     };
     init();
 
-    // Cleanup
     return () => {
       if (contract) {
         contract.removeAllListeners();
       }
     };
-  }, [useMetaMask, metaMaskAccount, metaMaskProvider]);
+  }, [active, provider, account]);
 
   useEffect(() => {
     if (!deadline) return;
@@ -130,24 +110,6 @@ export default function GroupPurchaseInterface() {
 
     return () => clearInterval(timer);
   }, [deadline]);
-
-  // 切換帳戶
-  const handleAccountChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newAccount = event.target.value;
-    setSelectedAccount(newAccount);
-    
-    if (contract) {
-      const localProvider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545");
-      const signer = localProvider.getSigner(newAccount);
-      const newContract = contract.connect(signer);
-      setContract(newContract);
-      setAccount(newAccount);
-      
-      // 更新餘額
-      const balanceWei = await localProvider.getBalance(newAccount);
-      setBalance(ethers.utils.formatEther(balanceWei));
-    }
-  };
 
   const updateContractInfo = async (contractInstance) => {
     const info = await contractInstance.getContractInfo();
@@ -225,34 +187,11 @@ export default function GroupPurchaseInterface() {
         </div>
       )}
 
-      <div className="mb-6 flex flex-col sm:flex-row items-center justify-center gap-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setUseMetaMask(!useMetaMask)}
-            className={`px-4 py-2 rounded-lg font-semibold ${
-              useMetaMask 
-                ? 'bg-orange-500 text-white' 
-                : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            {useMetaMask ? 'Using MetaMask' : 'Using Local Accounts'}
-          </button>
+      {!active && (
+        <div className="text-center py-4">
+          <p className="text-red-500">請連接MetaMask錢包以使用此應用</p>
         </div>
-        
-        {!useMetaMask && (
-          <select
-            value={selectedAccount}
-            onChange={handleAccountChange}
-            className="border rounded-lg px-4 py-2"
-          >
-            {localAccounts.map((acc) => (
-              <option key={acc} value={acc}>
-                {acc}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      )}
 
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-center">團購智能合約</h1>
@@ -260,7 +199,7 @@ export default function GroupPurchaseInterface() {
         <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
-              <InfoItem label="您的地址" value={account} />
+              <InfoItem label="您的地址" value={account || '未連接'} />
               <InfoItem label="帳戶餘額" value={`${Number(balance).toFixed(4)} ETH`} />
               <InfoItem label="發起人地址" value={owner} />
               <InfoItem label="收款人地址" value={supplier} />
