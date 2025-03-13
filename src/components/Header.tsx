@@ -9,7 +9,7 @@ export function Header() {
   const { active, error } = useWeb3React();
 
   return (
-    <div className="mb-2 shadow-lg navbar bg-neutral text-neutral-content rounded-box">
+    <div className="mb-2 shadow-lg navbar bg-base-200 text-base-content rounded-box">
       <Script
         async
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5337133458846513"
