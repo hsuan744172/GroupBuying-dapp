@@ -151,14 +151,39 @@ export default function GroupPurchaseInterface() {
       }
       const tx = await contract.finalizeGroupPurchase();
       await tx.wait();
-      alert('團購已完成！');
+      
+      // 檢查是否達到目標金額
+      if (Number(totalFunds) >= Number(goalAmount)) {
+        toast.success('團購完成！資金已轉給供應商');
+      } else {
+        toast.success('團購未達成目標金額，資金已退還給參與者');
+      }
       
       // 更新數據
       const funds = await contract.totalFunds();
       setTotalFunds(ethers.utils.formatEther(funds));
+      const participantCount = await contract.getParticipantCount();
+      setParticipants(participantCount.toNumber());
     } catch (error) {
-      console.error("完成失敗:", error);
-      alert(`完成失敗: ${error.message}`);
+      console.error("操作失敗:", error);
+      toast.error(`操作失敗: ${error.message}`);
+    }
+  };
+
+  const withdrawRefund = async () => {
+    if (!contract) return;
+    try {
+      const tx = await contract.withdrawRefund();
+      await tx.wait();
+      toast.success('退款提領成功！');
+      
+      // 更新餘額
+      if (provider && account) {
+        const balanceWei = await provider.getBalance(account);
+        setBalance(ethers.utils.formatEther(balanceWei));
+      }
+    } catch (error) {
+      toast.error(`退款提領失敗: ${error.message}`);
     }
   };
 
@@ -259,6 +284,13 @@ export default function GroupPurchaseInterface() {
             `}
           >
             完成團購
+          </button>
+          <button 
+            onClick={withdrawRefund}
+            disabled={isLoading || !isDeadlinePassed}
+            className="px-6 py-3 rounded-lg font-semibold text-white bg-purple-500 hover:bg-purple-600"
+          >
+            提領退款
           </button>
         </div>
       </div>
