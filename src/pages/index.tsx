@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 
 import Demo, { getLibrary } from "../components/Demo";
 import GroupPurchaseInterface from "../components/GroupPurchaseInterface";
+import Header from "../components/Header";
 
 const ThemeToggle = dynamic(async () => import("../components/ThemeToggle"), {
   ssr: false,
@@ -14,11 +15,14 @@ function App() {
       <ThemeToggle />
       <Web3ReactProvider getLibrary={getLibrary}>
         <div className="container mx-auto min-h-screen">
+          <Header />
           {/* 添加團購界面組件 */}
           <GroupPurchaseInterface />
           
-          {/* 原有的 Demo 組件 */}
-          <Demo />
+          {/* Demo 組件 */}
+          <div className="mt-4">
+            <Demo />
+          </div>
           
           <div className="hero">
             <div className="text-center hero-content">

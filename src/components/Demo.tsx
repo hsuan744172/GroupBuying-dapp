@@ -14,7 +14,6 @@ import { useEffect, useState } from "react";
 import { POLLING_INTERVAL, injected, walletconnect } from "../dapp/connectors";
 import { useEagerConnect, useInactiveListener } from "../dapp/hooks";
 import logger from "../logger";
-import { Header } from "./Header";
 
 function getErrorMessage(error?: Error) {
   if (error instanceof NoEthereumProviderError) {
@@ -75,7 +74,6 @@ export function Demo() {
     Boolean(error);
   return (
     <>
-      <Header />
       <div>
         {Boolean(error) && (
           <h4 style={{ marginTop: "1rem", marginBottom: "0" }}>
