@@ -1,23 +1,22 @@
 import { formatEther } from "@ethersproject/units";
 import { useWeb3React } from "@web3-react/core";
 import { useEffect, useState } from "react";
-
+import { ethers } from "ethers";
 import logger from "../logger";
 
 export function Balance() {
   const { account, library, chainId } = useWeb3React();
-  const [balance, setBalance] = useState<number | undefined>();
+  const [balance, setBalance] = useState<ethers.BigNumber | undefined>();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: // Ensures refresh if referential identity of library doesn't change across chainIds
   useEffect((): any => {
     if (Boolean(account) && Boolean(library)) {
       let stale = false;
 
       library
         .getBalance(account)
-        .then((accountBalance) => {
-          if (!stale && accountBalance) {
-            setBalance(Number(accountBalance));
+        .then((balance: ethers.BigNumber) => {
+          if (!stale) {
+            setBalance(balance);
           }
         })
         .catch(() => {
@@ -56,7 +55,11 @@ export function Balance() {
         />
       </svg>
       <span>
-        {balance === null ? "Error" : balance ? `Ξ${formatEther(balance)}` : ""}
+        {balance === undefined
+          ? ""
+          : balance === null
+          ? "Error"
+          : `Ξ${formatEther(balance)}`}
       </span>
     </div>
   );
