@@ -145,6 +145,7 @@ export default function GroupPurchaseInterface() {
 
   const finalizePurchase = async () => {
     if (!contract) return;
+    setIsLoading(true);
     try {
       if (!isDeadlinePassed) {
         throw new Error("團購還未結束，請等待截止時間到達");
@@ -156,7 +157,7 @@ export default function GroupPurchaseInterface() {
       if (Number(totalFunds) >= Number(goalAmount)) {
         toast.success('團購完成！資金已轉給供應商');
       } else {
-        toast.success('團購未達成目標金額，資金已退還給參與者');
+        toast.success('團購未達成目標金額，資金已自動退還給參與者');
       }
       
       // 更新數據
@@ -167,36 +168,9 @@ export default function GroupPurchaseInterface() {
     } catch (error) {
       console.error("操作失敗:", error);
       toast.error(`操作失敗: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const withdrawRefund = async () => {
-    if (!contract) return;
-    try {
-      const tx = await contract.withdrawRefund();
-      await tx.wait();
-      toast.success('退款提領成功！');
-      
-      // 更新餘額
-      if (provider && account) {
-        const balanceWei = await provider.getBalance(account);
-        setBalance(ethers.utils.formatEther(balanceWei));
-      }
-    } catch (error) {
-      toast.error(`退款提領失敗: ${error.message}`);
-    }
-  };
-
-  const formatDeadline = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleString('zh-TW', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
   };
 
   return (
@@ -285,17 +259,15 @@ export default function GroupPurchaseInterface() {
           >
             完成團購
           </button>
-          <button 
-            onClick={withdrawRefund}
-            disabled={isLoading || !isDeadlinePassed}
-            className="px-6 py-3 rounded-lg font-semibold text-white bg-purple-500 hover:bg-purple-600"
-          >
-            提領退款
-          </button>
         </div>
       </div>
     </div>
   );
+}
+
+function formatDeadline(dateString: string): string {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleString();
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {

@@ -68,13 +68,14 @@ contract GroupPurchase is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // 最終購買，將錢轉移給供應商或退款
     function finalizeGroupPurchase() public {
         require(block.timestamp >= deadline, "Contribution period still active");
+        require(totalFunds > 0, "No funds to process");
         
         bool success = totalFunds >= goalAmount;
         
         if (success) {
             payable(supplier).transfer(totalFunds); // 達成目標，資金轉給供應商進行購買
         } else {
-            refund(); // 未達成目標，退款給參與者
+            refund(); // 未達成目標，自動退款給參與者
         }
         
         emit PurchaseFinalized(success, totalFunds);
@@ -85,10 +86,11 @@ contract GroupPurchase is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         for (uint i = 0; i < participants.length; i++) {
             address participant = participants[i];
             uint amount = contributions[participant];
-            payable(participant).transfer(amount);
-            contributions[participant] = 0;
-            
-            emit RefundProcessed(participant, amount);
+            if (amount > 0) {  // 只退還有貢獻的參與者
+                payable(participant).transfer(amount);
+                contributions[participant] = 0;
+                emit RefundProcessed(participant, amount);
+            }
         }
         // 清空參與者列表
         delete participants;
